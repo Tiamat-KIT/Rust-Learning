@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script type="module">
+        import init,{grayscale_image}  from './pkg/backend.js'
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+                video.play();
+
+                // フレーム画像を取得してサーバに送信
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                const sendFrame = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    context.drawImage(video, 0, 0);
+                    const imageData = canvas.toDataURL('image/png');
+                    init().then(() => {
+                        // フレーム画像をWebAssemblyに渡す
+                        const processedImageData = grayscale_image(imageData);
+                        // WebAssemblyから返ってきた画像を表示
+                        const image = document.getElementById('image');
+                        /* image.src = `data:image/png;base64,${processedImageData}` */
+                        console.info(processedImageData)
+                        image.src = processedImageData;
+                    });
+                };
+                requestAnimationFrame(sendFrame);
+            })
+            .catch(err => console.error('Error accessing camera:', err));
+    </script>
+</head>
+<body>
+    <video id="video" width="640" height="480" autoplay></video>
+    <img id="image" width="640" height="480">
+    
+</body>
+</html>
